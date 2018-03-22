@@ -4,16 +4,21 @@ const session = require("express-session");
 const passport = require("passport");
 const Auth0Strategy = require("passport-auth0");
 const students = require("./students.json");
+const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
+app.use(express.static(path.join(__dirname, "./public/build")));
+
+app.use(cors());
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 2 * 7 * 24 * 60 * 60 * 1000
+      maxAge: 10000000
     }
   })
 );
@@ -45,9 +50,10 @@ passport.deserializeUser((user, done) => {
 app.get(
   "/auth",
   passport.authenticate("auth0", {
-    successRedirect: "/students",
+    successRedirect: "/",
     failureRedirect: "/auth",
-    connection: "github"
+    failureFlash: true
+    // connection: "github"
   })
 );
 
@@ -61,6 +67,11 @@ function authenticated(req, res, next) {
 
 app.get("/students", authenticated, (req, res, next) => {
   res.status(200).send(students);
+});
+
+app.get("/logout", function(req, res) {
+  req.logout();
+  res.redirect("/");
 });
 
 const port = process.env.PORT || 3001;
